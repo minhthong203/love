@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#090b15">
+<title>OUR NIGHT — The Date Game</title>
+<style>
+:root{
+  --ink:#f9f8ff;
+  --muted:#b9bfd6;
+  --glass:rgba(9,12,25,.62);
+  --line:rgba(255,255,255,.12);
+  --pink:#ff76af;
+  --pink2:#ffa8ca;
+  --blue:#7ce8ff;
+  --gold:#ffd86b;
+}
+*{box-sizing:border-box}
+html,body{
+  margin:0;width:100%;height:100%;overflow:hidden;
+  background:#060812;color:var(--ink);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  touch-action:none;
+}
+body{user-select:none}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hidden{display:none!important}
+.ui{position:fixed;inset:0;pointer-events:none}
+.top{
+  position:absolute;left:max(14px,env(safe-area-inset-left));right:max(14px,env(safe-area-inset-right));
+  top:max(12px,env(safe-area-inset-top));
+  display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.pill{
+  padding:9px 12px;border:1px solid var(--line);border-radius:14px;
+  background:rgba(7,9,18,.52);backdrop-filter:blur(12px);
+  box-shadow:0 10px 30px rgba(0,0,0,.18);
+}
+.pill .k{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.14em;color:#98a5c1}
+.pill .v{display:block;margin-top:3px;font-size:18px;line-height:1;font-weight:950}
+.progress{
+  width:min(240px,42vw);height:6px;margin-top:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden
+}
+.progress i{display:block;width:0;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--pink),var(--gold));box-shadow:0 0 18px rgba(255,118,175,.45)}
+.centerBanner{
+  position:absolute;left:50%;top:16%;transform:translateX(-50%) scale(.92);opacity:0;text-align:center;white-space:nowrap
+}
+.centerBanner.show{animation:banner 1.35s cubic-bezier(.2,.8,.2,1) both}
+.centerBanner .ey{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#dce3f7}
+.centerBanner strong{display:block;font-size:clamp(34px,8vw,76px);letter-spacing:-.06em;line-height:.88;text-shadow:0 12px 40px rgba(0,0,0,.42)}
+@keyframes banner{
+0%{opacity:0;transform:translateX(-50%) translateY(12px) scale(.86)}
+17%{opacity:1;transform:translateX(-50%) translateY(0) scale(1.03)}
+74%{opacity:1}
+100%{opacity:0;transform:translateX(-50%) translateY(-8px) scale(1.03)}
+}
+.toast{
+  position:absolute;left:50%;top:72%;transform:translate(-50%,-50%) scale(.86);
+  opacity:0;padding:12px 17px;border-radius:999px;border:1px solid rgba(255,255,255,.12);
+  background:rgba(7,9,18,.65);backdrop-filter:blur(12px);font-weight:850;font-size:13px;white-space:nowrap;
+  box-shadow:0 10px 28px rgba(0,0,0,.25);
+}
+.toast.show{animation:toast .9s ease both}
+@keyframes toast{
+0%{opacity:0;transform:translate(-50%,-50%) translateY(10px) scale(.86)}
+18%{opacity:1;transform:translate(-50%,-50%) translateY(0) scale(1)}
+100%{opacity:0;transform:translate(-50%,-50%) translateY(-6px) scale(1.02)}
+}
+
+.controls{
+  position:absolute;left:18px;bottom:18px;color:#d9def0;font-size:11px;
+  padding:8px 12px;border-radius:999px;background:rgba(5,8,15,.42);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(8px)
+}
+.mobile{
+  position:absolute;inset:0;display:none;pointer-events:none
+}
+.joy{
+  position:absolute;left:18px;bottom:22px;width:138px;height:138px;border-radius:50%;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 18px 50px rgba(0,0,0,.24),inset 0 0 30px rgba(255,255,255,.03);
+  pointer-events:auto;touch-action:none;
+}
+.knob{
+  position:absolute;left:50%;top:50%;width:60px;height:60px;transform:translate(-50%,-50%);
+  border-radius:50%;background:radial-gradient(circle at 35% 28%,#ffd3e4,#ff76af 58%,#c64079);
+  box-shadow:0 10px 32px rgba(255,118,175,.28);
+}
+.action{
+  position:absolute;right:24px;bottom:30px;width:88px;height:88px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.18);background:radial-gradient(circle at 35% 30%,#b8f5ff,#67d9eb 58%,#266f91);
+  color:#08222a;font-size:25px;font-weight:1000;
+  box-shadow:0 16px 38px rgba(67,208,240,.28);pointer-events:auto;touch-action:none;
+}
+.action small{display:block;font-size:9px;letter-spacing:.14em;margin-top:1px}
+.interactHint{
+  position:absolute;left:50%;bottom:28%;transform:translateX(-50%);opacity:0;
+  padding:8px 12px;border-radius:999px;background:rgba(10,11,21,.67);border:1px solid rgba(255,255,255,.12);
+  font-size:12px;font-weight:900;backdrop-filter:blur(10px);white-space:nowrap
+}
+.interactHint.show{opacity:1;animation:hintPulse 1.1s ease-in-out infinite}
+@keyframes hintPulse{50%{transform:translateX(-50%) translateY(-3px)}}
+
+.screen{
+  position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:18px;
+  background:linear-gradient(180deg,rgba(3,4,10,.14),rgba(3,4,10,.72));
+}
+.panel{
+  width:min(1120px,96vw);padding:30px;border-radius:30px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(145deg,rgba(13,16,33,.92),rgba(8,10,22,.84));
+  box-shadow:0 30px 110px rgba(0,0,0,.5);backdrop-filter:blur(18px);
+}
+.hero{display:grid;grid-template-columns:1.18fr .82fr;gap:24px;align-items:stretch}
+.kicker{font-size:10px;font-weight:950;letter-spacing:.2em;text-transform:uppercase;color:var(--blue)}
+h1{margin:8px 0 12px;font-size:clamp(55px,10vw,112px);line-height:.82;letter-spacing:-.075em}
+.sub{max-width:700px;color:#bcc4d9;font-size:14px;line-height:1.65;margin:0}
+.buttons{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+button{
+  border:0;border-radius:14px;padding:13px 18px;font-size:14px;font-weight:950;cursor:pointer;
+  background:linear-gradient(180deg,#ff9fc6,#ff609e);color:#2a0918;box-shadow:0 12px 30px rgba(255,96,158,.22)
+}
+button.secondary{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);color:#fff;box-shadow:none}
+.custom{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px;max-width:620px}
+.field{
+  padding:12px 14px;border-radius:15px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03)
+}
+.field label{display:block;font-size:9px;color:#8e9bb4;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
+.field input{
+  width:100%;border:0;outline:0;background:transparent;color:#fff;font:800 15px inherit
+}
+.preview{
+  min-height:350px;border-radius:24px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.1);
+  background:
+    radial-gradient(circle at 24% 32%,rgba(255,118,175,.2),transparent 35%),
+    radial-gradient(circle at 74% 28%,rgba(110,229,255,.15),transparent 34%),
+    linear-gradient(160deg,#141833,#0a0c1a 64%,#11182b);
+}
+.preview .moon{position:absolute;width:100px;height:100px;border-radius:50%;right:46px;top:38px;background:radial-gradient(circle at 38% 30%,#fff9e5,#f5e6bc 55%,#cfbd94);box-shadow:0 0 70px rgba(255,238,192,.18)}
+.preview .heart{position:absolute;left:50%;top:50%;font-size:120px;transform:translate(-50%,-50%);filter:drop-shadow(0 20px 40px rgba(255,94,159,.35));animation:float 3s ease-in-out infinite}
+@keyframes float{50%{transform:translate(-50%,-54%) scale(1.04)}}
+.preview .caption{position:absolute;left:20px;right:20px;bottom:18px;padding:14px 15px;border-radius:18px;background:rgba(4,6,14,.52);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);text-align:center}
+.preview .caption b{display:block;font-size:16px}
+.preview .caption span{display:block;color:#9ba9c0;font-size:11px;margin-top:4px}
+.tipgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}
+.tip{padding:12px 13px;border-radius:16px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);color:#aeb8cb;font-size:12px;line-height:1.45}
+.tip b{display:block;color:#fff;margin-bottom:4px}
+
+.result{text-align:center}
+.result h2{margin:6px 0 8px;font-size:clamp(42px,7vw,80px);letter-spacing:-.06em}
+.result p{margin:0 auto;color:#b9c2d7;line-height:1.55;max-width:720px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:20px 0}
+.stat{padding:15px;border-radius:17px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+.stat span{display:block;font-size:9px;color:#8d9ab2;letter-spacing:.12em;text-transform:uppercase}
+.stat b{display:block;font-size:28px;margin-top:4px}
+
+@media(max-width:900px){
+  .mobile{display:block}
+  .controls{left:18px;right:18px;bottom:172px;text-align:center}
+  .interactHint{bottom:196px}
+}
+@media(max-width:760px){
+  .hero{grid-template-columns:1fr}
+  .preview{display:none}
+  .panel{padding:22px}
+  .tipgrid{grid-template-columns:1fr}
+  .custom{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="ui">
+  <div class="top">
+    <div class="row">
+      <div class="pill"><span class="k">Chapter</span><span class="v" id="chapter">1/5</span></div>
+      <div class="pill"><span class="k">Ký ức</span><span class="v" id="memory">0/5</span></div>
+      <div class="pill"><span class="k">Together</span><div class="progress"><i id="together"></i></div></div>
+    </div>
+    <div class="row">
+      <div class="pill"><span class="k">Điểm</span><span class="v" id="score">0</span></div>
+      <div class="pill"><span class="k">Best</span><span class="v" id="best">0</span></div>
+    </div>
+  </div>
+  <div class="centerBanner" id="banner"><div class="ey" id="bannerEy">CHAPTER 01 • VƯỜN ĐÊM</div><strong id="bannerTitle">GẶP NHAU</strong></div>
+  <div class="toast" id="toast"></div>
+  <div class="interactHint" id="interactHint">TỚI GẦN ĐỂ TƯƠNG TÁC ✦</div>
+  <div class="controls">WASD / ↑↓←→ • Shift chạy nhanh • E tương tác</div>
+  <div class="mobile" id="mobileControls">
+    <div class="joy" id="joy"><div class="knob" id="knob"></div></div>
+    <button class="action" id="boost">⚡<small>CHẠY</small></button>
+  </div>
+</div>
+
+<div class="screen" id="start">
+  <div class="panel hero">
+    <div>
+      <div class="kicker">A PREMIUM LITTLE DATE GAME</div>
+      <h1>OUR<br>NIGHT</h1>
+      <p class="sub">
+        Một chuyến hẹn hò tương tác dành riêng cho hai người — nhưng bạn có thể chơi một mình trên điện thoại.
+        Khám phá 5 chapter, nhặt những “mảnh ký ức”, mở các địa điểm mới và đi đến cuộc gặp cuối cùng trên rooftop.
+      </p>
+
+      <div class="custom">
+        <div class="field"><label>Tên của bạn</label><input id="nameA" maxlength="22" value="Mình"></div>
+        <div class="field"><label>Tên người ấy</label><input id="nameB" maxlength="22" value="Em"></div>
+      </div>
+
+      <div class="buttons">
+        <button id="playBtn">BẮT ĐẦU HẸN HÒ</button>
+        <button class="secondary" id="musicBtn">♫ ÂM THANH: BẬT</button>
+      </div>
+
+      <div class="tipgrid">
+        <div class="tip"><b>🌙 5 CHAPTER</b>Vườn đêm → phố mưa → biển → lễ hội → rooftop.</div>
+        <div class="tip"><b>💗 THU THẬP</b>Đi tới gần những mảnh ký ức phát sáng để nhặt.</div>
+        <div class="tip"><b>✨ KHÔNG KHÓ</b>Tập trung vào khám phá, cảm xúc và đoạn kết.</div>
+      </div>
+    </div>
+
+    <div class="preview">
+      <div class="moon"></div>
+      <div class="heart">♥</div>
+      <div class="caption"><b>Một đêm. Năm nơi. Một câu chuyện.</b><span>Tên của hai người sẽ xuất hiện ở đoạn kết.</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="screen hidden" id="result">
+  <div class="panel result">
+    <div class="kicker">THE FINAL SCENE</div>
+    <h2 id="resultTitle">OUR NIGHT ❤️</h2>
+    <p id="resultText">Hành trình đã khép lại.</p>
+    <div class="stats">
+      <div class="stat"><span>Điểm</span><b id="rScore">0</b></div>
+      <div class="stat"><span>Chapter</span><b>5/5</b></div>
+      <div class="stat"><span>Ký ức</span><b id="rMemory">0</b></div>
+      <div class="stat"><span>Best</span><b id="rBest">0</b></div>
+    </div>
+    <div class="buttons" style="justify-content:center">
+      <button id="againBtn">CHƠI LẠI</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ============================================================
+   OUR NIGHT — GAME CONFIG
+   Thay nhanh tại đây:
+   PLAYER_SPEED = tốc độ nhân vật
+   BOOST = tốc độ chạy nhanh
+   MEMORY_PER_STAGE = số ký ức mỗi chapter
+   ============================================================ */
+
+const CONFIG = {
+  PLAYER_SPEED: 245,
+  BOOST: 1.42,
+  PLAYER_R: 22,
+  INTERACT_R: 42,
+  MEMORY_PER_STAGE: 5,
+  HAZARD_DRAIN: 0.9,
+  SCORE_MEMORY: 120,
+  SCORE_CHAPTER: 360,
+  MAX_PARTICLES: 700
+};
+
+const STAGES = [
+  {title:"GẶP NHAU",sub:"CHAPTER 01 • VƯỜN ĐÊM",sky1:"#0d1531",sky2:"#2f4868",ground:"#182a34",accent:"#ff78ac",type:"garden"},
+  {title:"CÙNG NHAU ĐI",sub:"CHAPTER 02 • PHỐ MƯA",sky1:"#12192d",sky2:"#465675",ground:"#20242e",accent:"#76e8ff",type:"rain"},
+  {title:"BÌNH YÊN",sub:"CHAPTER 03 • BÃI BIỂN",sky1:"#4f8da7",sky2:"#b5dbdc",ground:"#d2b981",accent:"#ff769c",type:"beach"},
+  {title:"NGÀY HỘI",sub:"CHAPTER 04 • LỄ HỘI",sky1:"#241341",sky2:"#762169",ground:"#23182d",accent:"#ffd86b",type:"festival"},
+  {title:"MỘT ĐIỂM ĐẾN",sub:"CHAPTER 05 • ROOFTOP",sky1:"#0b1130",sky2:"#47285f",ground:"#171827",accent:"#ff87ba",type:"rooftop"}
+];
+
+const canvas=document.getElementById("c");
+const ctx=canvas.getContext("2d",{alpha:false});
+let W=innerWidth,H=innerHeight,DPR=Math.min(devicePixelRatio||1,2);
+
+const $=id=>document.getElementById(id);
+const ui={
+  chapter:$("chapter"),memory:$("memory"),score:$("score"),best:$("best"),
+  together:$("together"),banner:$("banner"),bannerEy:$("bannerEy"),bannerTitle:$("bannerTitle"),
+  toast:$("toast"),hint:$("interactHint"),start:$("start"),result:$("result"),
+  rScore:$("rScore"),rMemory:$("rMemory"),rBest:$("rBest"),resultTitle:$("resultTitle"),resultText:$("resultText"),
+  mobile:$("mobileControls"),joy:$("joy"),knob:$("knob"),boost:$("boost")
+};
+
+const keys=new Set();
+let joyX=0,joyY=0,boostTouch=false,joyActive=false;
+
+addEventListener("keydown",e=>{
+  keys.add(e.code);
+  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();
+});
+addEventListener("keyup",e=>keys.delete(e.code));
+
+function resize(){
+  W=innerWidth;H=innerHeight;DPR=Math.min(devicePixelRatio||1,2);
+  canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);
+  canvas.style.width=W+"px";canvas.style.height=H+"px";
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+addEventListener("resize",resize,{passive:true});resize();
+
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function rand(a,b){return a+Math.random()*(b-a)}
+function dist(ax,ay,bx,by){return Math.hypot(ax-bx,ay-by)}
+
+const player={x:0,y:0,vx:0,vy:0,face:0};
+let memories=[],hazards=[],particles=[],decor=[],stars=[];
+let stage=0,score=0,best=Number(localStorage.getItem("ourNightBest")||0),running=false;
+let collected=0,together=0,elapsed=0;
+let camera={x:0,y:0};
+let shake=0;
+let nameA="Mình",nameB="Em";
+let soundOn=true;
+let audio=null;
+
+function worldSize(){
+  return {w:Math.max(1500,W*1.7),h:Math.max(950,H*1.65)};
+}
+
+function setupAudio(){
+  if(!soundOn)return;
+  try{
+    if(!audio)audio=new (window.AudioContext||window.webkitAudioContext)();
+    if(audio.state==="suspended")audio.resume();
+  }catch(_){}
+}
+function beep(freq,dur,type="sine",gain=.04,slide=0){
+  if(!soundOn)return;
+  setupAudio(); if(!audio)return;
+  const o=audio.createOscillator(),g=audio.createGain();
+  o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);
+  if(slide)o.frequency.linearRampToValueAtTime(Math.max(30,freq+slide),audio.currentTime+dur);
+  g.gain.setValueAtTime(gain,audio.currentTime);
+  g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+dur);
+  o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+dur+.02);
+}
+
+function setJoy(px,py){
+  const r=ui.joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+  let dx=px-cx,dy=py-cy;
+  const max=r.width*.34,l=Math.hypot(dx,dy)||1;
+  if(l>max){dx=dx/l*max;dy=dy/l*max}
+  joyX=dx/max;joyY=dy/max;
+  ui.knob.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
+}
+function resetJoy(){joyX=0;joyY=0;ui.knob.style.transform="translate(-50%,-50%)"}
+
+ui.joy.addEventListener("pointerdown",e=>{e.preventDefault();joyActive=true;ui.joy.setPointerCapture?.(e.pointerId);setJoy(e.clientX,e.clientY)});
+ui.joy.addEventListener("pointermove",e=>{if(joyActive){e.preventDefault();setJoy(e.clientX,e.clientY)}});
+ui.joy.addEventListener("pointerup",()=>{joyActive=false;resetJoy()});
+ui.joy.addEventListener("pointercancel",()=>{joyActive=false;resetJoy()});
+ui.boost.addEventListener("pointerdown",e=>{e.preventDefault();boostTouch=true;ui.boost.style.transform="scale(.94)"});
+["pointerup","pointercancel","pointerleave"].forEach(t=>ui.boost.addEventListener(t,()=>{boostTouch=false;ui.boost.style.transform=""}));
+
+function showBanner(){
+  const S=STAGES[stage];
+  ui.bannerEy.textContent=S.sub;
+  ui.bannerTitle.textContent=S.title;
+  ui.banner.classList.remove("show");void ui.banner.offsetWidth;ui.banner.classList.add("show");
+}
+function toast(text,color="#fff"){
+  ui.toast.textContent=text;ui.toast.style.color=color;
+  ui.toast.classList.remove("show");void ui.toast.offsetWidth;ui.toast.classList.add("show");
+}
+
+function sync(){
+  const S=STAGES[stage];
+  ui.chapter.textContent=`${stage+1}/5`;
+  ui.memory.textContent=`${collected}/${S.hearts}`;
+  ui.score.textContent=score.toLocaleString("vi-VN");
+  ui.best.textContent=Math.max(best,score).toLocaleString("vi-VN");
+  ui.together.style.width=`${together}%`;
+  ui.hint.classList.toggle("show",memories.length===0);
+}
+
+function makeMemory(size){
+  memories=[];collected=0;
+  for(let i=0;i<SafeNumber(STAGES[stage].hearts||CONFIG.MEMORY_PER_STAGE);i++){
+    let x,y,tries=0;
+    do{
+      x=rand(120,size.w-120);y=rand(125,size.h-130);tries++;
+    }while(tries<100&&(dist(x,y,player.x,player.y)<240||memories.some(m=>dist(x,y,m.x,m.y)<130)));
+    memories.push({x,y,t:rand(0,6.28),taken:false});
+  }
+}
+function SafeNumber(v){return Number.isFinite(v)?v:CONFIG.MEMORY_PER_STAGE}
+
+function resetStage(i){
+  stage=i;const size=worldSize();
+  player.x=size.w*.5;player.y=size.h*.55;player.vx=player.vy=0;player.face=0;
+  camera.x=player.x-W*.5;camera.y=player.y-H*.5;
+  hazards=[];particles=[];decor=[];stars=[];
+  const S=STAGES[stage];
+
+  for(let i=0;i<180;i++)stars.push({x:rand(0,size.w),y:rand(0,size.h*.62),r:rand(.5,2.3),a:rand(.2,.85),tw:rand(0,6.28)});
+
+  const hazardCount=stage===0?2:stage+2;
+  for(let i=0;i<hazardCount;i++){
+    hazards.push({x:rand(170,size.w-170),y:rand(160,size.h-180),vx:rand(-55,55),vy:rand(-45,45),r:rand(25,42),ph:rand(0,6.28)});
+  }
+
+  for(let i=0;i<48;i++){
+    const x=rand(80,size.w-80),y=rand(130,size.h-70);
+    decor.push({x,y,s:rand(.65,1.25),type:S.type==="city"?"b":"d"});
+  }
+  makeMemory(size);showBanner();sync();
+}
+
+function startGame(){
+  nameA=($("nameA").value.trim()||"Mình").slice(0,22);
+  nameB=($("nameB").value.trim()||"Em").slice(0,22);
+  setupAudio();
+  running=true;score=0;stage=0;together=0;
+  $("start").classList.add("hidden");$("result").classList.add("hidden");
+  resetStage(0);toast(`Hôm nay là của ${nameA} & ${nameB} ❤️`,"#ffd0e2");
+}
+
+function endGame(){
+  running=false;
+  if(score>best){best=score;localStorage.setItem("ourNightBest",String(best))}
+  $("rScore").textContent=score.toLocaleString("vi-VN");
+  $("rMemory").textContent=STAGES.reduce((a,S)=>a+S.hearts,0);
+  $("rBest").textContent=best.toLocaleString("vi-VN");
+  $("resultTitle").textContent=`${nameA} ♥ ${nameB}`;
+  $("resultText").textContent=`“Một đêm. Năm chapter. Và một kỷ niệm dành riêng cho ${nameA} & ${nameB}.”`;
+  $("result").classList.remove("hidden");
+  beep(523,.12,"sine",.04,200);beep(659,.13,"sine",.04,260);beep(784,.2,"sine",.035,340);
+}
+
+function collect(m){
+  const gain=CONFIG.SCORE_MEMORY+stage*35;
+  score+=gain;collected++;
+  burst(m.x,m.y,26,"memory");shake=7;beep(640,.08,"triangle",.06,260);
+  toast(`Ký ức ${collected}/${STAGES[stage].hearts}  •  +${gain}`,"#ffd86b");
+  memories=memories.filter(x=>x!==m);
+  if(memories.length===0){toast("CỔNG ĐÃ MỞ ✦ HÃY ĐI TỚI ÁNH SÁNG","#7ce8ff");beep(880,.11,"sine",.05,220);}
+}
+
+function updatePlayer(dt,size){
+  let dx=joyX,dy=joyY;
+  dx+=(keys.has("KeyD")?1:0)-(keys.has("KeyA")?1:0);
+  dy+=(keys.has("KeyS")?1:0)-(keys.has("KeyW")?1:0);
+  dx+=(keys.has("ArrowRight")?1:0)-(keys.has("ArrowLeft")?1:0);
+  dy+=(keys.has("ArrowDown")?1:0)-(keys.has("ArrowUp")?1:0);
+
+  const l=Math.hypot(dx,dy);
+  if(l>1){dx/=l;dy/=l}
+  const boost=boostTouch||keys.has("ShiftLeft")||keys.has("ShiftRight");
+  const sp=CONFIG.PLAYER_SPEED*(boost?CONFIG.BOOST:1);
+  if(l>.08)player.face=Math.atan2(dy,dx);
+
+  player.vx+=(dx*sp-player.vx)*Math.min(1,dt*11);
+  player.vy+=(dy*sp-player.vy)*Math.min(1,dt*11);
+  player.x+=player.vx*dt;player.y+=player.vy*dt;
+  player.x=clamp(player.x,60,size.w-60);player.y=clamp(player.y,75,size.h-95);
+}
+
+function updateHazards(dt,size){
+  for(const h of hazards){
+    h.x+=h.vx*dt;h.y+=h.vy*dt;
+    h.vx+=Math.sin(elapsed*1.35+h.ph)*11*dt;
+    h.vy+=Math.cos(elapsed*1.15+h.ph)*10*dt;
+    if(h.x<h.r||h.x>size.w-h.r)h.vx*=-1;
+    if(h.y<h.r||h.y>size.h-h.r)h.vy*=-1;
+    const d=dist(player.x,player.y,h.x,h.y);
+    if(d<h.r+CONFIG.PLAYER_R*.55){
+      player.x+=(player.x-h.x)/(d||1)*22*dt;
+      player.y+=(player.y-h.y)/(d||1)*22*dt;
+      score=Math.max(0,score-1);
+      burst(player.x,player.y,1,"dust");
+    }
+  }
+}
+
+function burst(x,y,n,type){
+  for(let i=0;i<n;i++){
+    if(particles.length>=CONFIG.MAX_PARTICLES)particles.shift();
+    const a=Math.random()*Math.PI*2;
+    const speed=type==="portal"?rand(80,260):rand(35,180);
+    particles.push({x,y,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,life:rand(.35,.9),max:.9,s:rand(2,7),type});
+  }
+}
+function updateParticles(dt){
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.pow(.94,dt*60);p.vy*=Math.pow(.94,dt*60);
+    if(p.type!=="portal")p.vy+=28*dt;
+    if(p.life<=0)particles.splice(i,1);
+  }
+}
+
+function nextStage(){
+  score+=CONFIG.SCORE_CHAPTER+stage*100;
+  if(stage===STAGES.length-1){endGame();return}
+  stage++;resetStage(stage);shake=12;burst(player.x,player.y,45,"portal");
+}
+
+function update(dt){
+  elapsed+=dt;
+  if(!running)return;
+  const size=worldSize();
+  updatePlayer(dt,size);updateHazards(dt,size);updateParticles(dt);
+
+  for(const m of [...memories]){
+    m.t+=dt*2.4;
+    if(dist(player.x,player.y,m.x,m.y)<CONFIG.INTERACT_R){
+      collect(m);break;
+    }
+  }
+
+  if(memories.length===0){
+    const gateX=size.w*.5,gateY=size.h*.83;
+    if(dist(player.x,player.y,gateX,gateY)<105)nextStage();
+  }
+
+  // Together meter becomes a "heart energy" for the single-player experience:
+  const movement=Math.hypot(player.vx,player.vy);
+  together += ((18+clamp(movement/CONFIG.PLAYER_SPEED,0,1)*82)-together)*Math.min(1,dt*2.5);
+
+  camera.x+=(player.x-W*.5-camera.x)*Math.min(1,dt*4.5);
+  camera.y+=(player.y-H*.5-camera.y)*Math.min(1,dt*4.5);
+  camera.x=clamp(camera.x,0,Math.max(0,size.w-W));
+  camera.y=clamp(camera.y,0,Math.max(0,size.h-H));
+  sync();
+}
+
+function drawSky(S){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,S.sky1);g.addColorStop(1,S.sky2);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+}
+
+function drawStars(){
+  for(const st of stars){
+    const x=st.x-camera.x*.1,y=st.y-camera.y*.07;
+    if(x<-5||x>W+5||y<-5||y>H*.75)continue;
+    ctx.globalAlpha=st.a*(.6+.4*Math.sin(elapsed*2+st.tw));
+    ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(x,y,st.r,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+
+function drawParallax(S,size){
+  ctx.save();
+  drawStars();
+  if(S.type==="garden"||S.type==="rooftop"){
+    const mx=W*.79,my=H*.16;
+    const rg=ctx.createRadialGradient(mx,my,5,mx,my,120);
+    rg.addColorStop(0,"rgba(255,246,223,.7)");rg.addColorStop(1,"rgba(255,246,223,0)");
+    ctx.fillStyle=rg;ctx.fillRect(mx-130,my-130,260,260);
+    ctx.fillStyle="#fff2ce";ctx.beginPath();ctx.arc(mx,my,34,0,Math.PI*2);ctx.fill();
+  }
+  for(let layer=0;layer<3;layer++){
+    const y=H*(.43+layer*.11);
+    ctx.fillStyle=layer===0?"rgba(85,122,118,.34)":layer===1?"rgba(53,85,87,.38)":"rgba(32,57,61,.46)";
+    ctx.beginPath();ctx.moveTo(0,H);
+    for(let x=-100;x<W+180;x+=120)ctx.lineTo(x,y+Math.sin(x*.012+layer)*18+Math.sin(x*.028)*8);
+    ctx.lineTo(W,H);ctx.closePath();ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawGround(S,size){
+  ctx.save();
+  ctx.fillStyle=S.ground;ctx.fillRect(-camera.x,-camera.y,size.w,size.h);
+  ctx.globalAlpha=.12;ctx.strokeStyle=S.accent;ctx.lineWidth=2;
+  for(let x=0;x<size.w;x+=90){ctx.beginPath();ctx.moveTo(x-camera.x,-camera.y);ctx.lineTo(x-camera.x,size.h-camera.y);ctx.stroke()}
+  for(let y=0;y<size.h;y+=90){ctx.beginPath();ctx.moveTo(-camera.x,y-camera.y);ctx.lineTo(size.w-camera.x,y-camera.y);ctx.stroke()}
+  ctx.globalAlpha=1;
+
+  const type=S.type;
+  if(type==="garden"){
+    for(let i=0;i<30;i++)drawTree((i*177+90)%size.w-camera.x,(i*107+120)%size.h-camera.y,0.72+(i%3)*.15);
+    drawBench(size.w*.24-camera.x,size.h*.74-camera.y);
+    drawBench(size.w*.76-camera.x,size.h*.31-camera.y);
+  }
+  if(type==="rain"){
+    for(let i=0;i<17;i++)drawBuilding((i*311)%size.w-camera.x,(i*183+40)%size.h-camera.y,80+(i%4)*22,65+(i%3)*24);
+    ctx.globalAlpha=.19;ctx.strokeStyle="#bcecff";ctx.lineWidth=1;
+    for(let i=0;i<180;i++){const x=(i*89+elapsed*150)%W,y=(i*51+elapsed*390)%H;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-5,y+16);ctx.stroke()}
+    ctx.globalAlpha=1;
+  }
+  if(type==="beach"){
+    ctx.fillStyle="rgba(94,200,222,.19)";ctx.fillRect(0,H*.18,W,H*.48);
+    for(let i=0;i<7;i++){const y=H*(.32+i*.06)+Math.sin(elapsed*.7+i)*4;ctx.strokeStyle="rgba(255,255,255,.22)";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,y);ctx.quadraticCurveTo(W*.5,y-10,W,y);ctx.stroke()}
+    for(let i=0;i<21;i++)drawPalm((i*207+50)%size.w-camera.x,(i*141+220)%size.h-camera.y,.9+(i%2)*.2);
+  }
+  if(type==="festival"){
+    for(let i=0;i<35;i++)drawLantern((i*147+40)%size.w-camera.x,(i*101+70)%size.h-camera.y,i);
+    ctx.globalAlpha=.12;
+    for(let i=0;i<7;i++){const x=W*(.08+i*.15);const rg=ctx.createRadialGradient(x,H*.16,5,x,H*.16,230);rg.addColorStop(0,S.accent);rg.addColorStop(1,"rgba(0,0,0,0)");ctx.fillStyle=rg;ctx.fillRect(x-230,H*.02,460,400)}
+    ctx.globalAlpha=1;
+  }
+  if(type==="rooftop"){
+    for(let i=0;i<20;i++)drawRoof((i*241+50)%size.w-camera.x,(i*131+90)%size.h-camera.y,0.8+(i%3)*.17);
+    ctx.fillStyle="rgba(5,8,18,.52)";
+    for(let i=0;i<18;i++){const bw=50+(i%4)*20,bh=80+(i%5)*34,x=i*110-camera.x*.28;ctx.fillRect(x,H*.52-bh,bw,bh)}
+  }
+  ctx.restore();
+}
+
+function drawTree(x,y,s){
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle="#4a3028";ctx.fillRect(-6,-45,12,72);
+  ctx.fillStyle="#28513f";for(const q of [[0,-60,42],[-25,-34,34],[26,-32,33],[1,-6,35]]){ctx.beginPath();ctx.arc(q[0],q[1],q[2],0,Math.PI*2);ctx.fill()}
+  ctx.restore();
+}
+function drawBench(x,y){
+  ctx.save();ctx.translate(x,y);ctx.fillStyle="#80503a";ctx.fillRect(-54,0,108,12);ctx.fillRect(-45,12,8,28);ctx.fillRect(37,12,8,28);ctx.restore();
+}
+function drawBuilding(x,y,w,h){
+  ctx.save();ctx.translate(x,y);ctx.fillStyle="rgba(18,27,41,.84)";ctx.fillRect(-w*.5,-h*.5,w,h);ctx.fillStyle="rgba(118,228,255,.43)";
+  for(let yy=-h*.34;yy<h*.35;yy+=18)for(let xx=-w*.34;xx<w*.35;xx+=18)if(((xx+yy)/18)%3!==0)ctx.fillRect(xx,yy,7,10);
+  ctx.restore();
+}
+function drawPalm(x,y,s){
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.strokeStyle="#7b5b42";ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(0,34);ctx.lineTo(7,-42);ctx.stroke();ctx.strokeStyle="#2d755a";ctx.lineWidth=5;
+  for(let a=-1.25;a<1.3;a+=.5){ctx.beginPath();ctx.moveTo(7,-42);ctx.lineTo(Math.cos(a)*58,-42+Math.sin(a)*28);ctx.stroke()}ctx.restore();
+}
+function drawLantern(x,y,i){
+  ctx.save();ctx.translate(x,y);const g=ctx.createRadialGradient(0,5,1,0,5,34);g.addColorStop(0,"rgba(255,208,99,.72)");g.addColorStop(1,"rgba(255,208,99,0)");ctx.fillStyle=g;ctx.fillRect(-40,-38,80,80);
+  ctx.fillStyle=i%2?"#ff82b1":"#ffd86b";ctx.beginPath();ctx.roundRect?.(-8,-11,16,22,5);ctx.fill();ctx.restore();
+}
+function drawRoof(x,y,s){
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.fillStyle="#34384f";ctx.fillRect(-27,-16,54,32);ctx.fillStyle="#565d7a";ctx.fillRect(-19,-27,38,10);ctx.fillStyle="#88e5ff";ctx.fillRect(-13,-9,26,7);ctx.restore();
+}
+
+function drawPortal(x,y,S,open){
+  ctx.save();ctx.translate(x,y);
+  const g=ctx.createRadialGradient(0,0,8,0,0,115);g.addColorStop(0,open?S.accent:"rgba(255,255,255,.08)");g.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle=g;ctx.fillRect(-120,-120,240,240);
+  ctx.strokeStyle=open?S.accent:"#758198";ctx.lineWidth=8;ctx.shadowColor=S.accent;ctx.shadowBlur=open?20:0;
+  ctx.beginPath();ctx.arc(0,0,56+Math.sin(elapsed*3)*3,0,Math.PI*2);ctx.stroke();
+  ctx.shadowBlur=0;ctx.fillStyle=open?"rgba(255,255,255,.07)":"rgba(255,255,255,.02)";ctx.beginPath();ctx.arc(0,0,42,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+function drawMemory(m,S){
+  const bob=Math.sin(m.t)*6,r=15+Math.sin(m.t*1.4)*2;
+  ctx.save();ctx.translate(m.x-camera.x,m.y-camera.y+bob);
+  const g=ctx.createRadialGradient(0,0,3,0,0,38);g.addColorStop(0,S.accent);g.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle=g;ctx.fillRect(-45,-45,90,90);
+  ctx.strokeStyle=S.accent;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,r+8+Math.sin(elapsed*2)*2,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle="#fff1f8";ctx.shadowColor=S.accent;ctx.shadowBlur=16;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+  ctx.fillStyle=S.accent;ctx.beginPath();ctx.moveTo(0,9);ctx.bezierCurveTo(-16,-3,-12,-15,0,-9);ctx.bezierCurveTo(12,-15,16,-3,0,9);ctx.fill();
+  ctx.restore();
+}
+function drawHazard(h){
+  const x=h.x-camera.x,y=h.y-camera.y;
+  ctx.save();ctx.translate(x,y);ctx.rotate(elapsed*.55+h.ph);
+  const g=ctx.createRadialGradient(0,0,1,0,0,h.r*1.8);g.addColorStop(0,"rgba(255,90,118,.18)");g.addColorStop(1,"rgba(255,90,118,0)");
+  ctx.fillStyle=g;ctx.fillRect(-h.r*2,-h.r*2,h.r*4,h.r*4);
+  ctx.fillStyle="#b83d61";ctx.beginPath();ctx.arc(0,0,h.r,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle="rgba(255,255,255,.18)";ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,0,h.r*.62,0,Math.PI*1.45);ctx.stroke();
+  ctx.restore();
+}
+function drawPlayer(){
+  const moving=Math.hypot(player.vx,player.vy);
+  const bob=moving>10?Math.sin(elapsed*10)*2:0;
+  const x=player.x-camera.x,y=player.y-camera.y+bob;
+  ctx.save();ctx.translate(x,y);
+  ctx.fillStyle="rgba(0,0,0,.22)";ctx.beginPath();ctx.ellipse(0,25,26,8,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#ff6ea8";ctx.beginPath();ctx.roundRect?.(-18,-8,36,40,13);ctx.fill();
+  ctx.fillStyle="#f4d0bd";ctx.beginPath();ctx.arc(0,-27,17,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#3a2135";ctx.beginPath();ctx.arc(0,-32,18,Math.PI,0);ctx.fill();
+  ctx.fillStyle="#1e2130";ctx.beginPath();ctx.arc(-6,-26,1.8,0,Math.PI*2);ctx.arc(6,-26,1.8,0,Math.PI*2);ctx.fill();
+  // little heart badge
+  ctx.fillStyle="#fff";ctx.font="bold 10px system-ui";ctx.textAlign="center";ctx.fillText("♥",0,7);
+  ctx.strokeStyle="rgba(255,255,255,.82)";ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,1,29,-.55,.55);ctx.stroke();
+  ctx.restore();
+}
+function drawParticles(){
+  ctx.save();
+  for(const p of particles){ctx.globalAlpha=clamp(p.life/p.max,0,1);ctx.fillStyle=p.type==="portal"?"#82edff":p.type==="memory"?"#ffd86b":"#ff9fbd";ctx.beginPath();ctx.arc(p.x-camera.x,p.y-camera.y,p.s,0,Math.PI*2);ctx.fill()}
+  ctx.restore();
+}
+function draw(){
+  const S=STAGES[stage],size=worldSize();
+  drawSky(S);drawParallax(S,size);drawGround(S,size);
+  const gx=size.w*.5,gy=size.h*.83;
+  drawPortal(gx-camera.x,gy-camera.y,S,memories.length===0);
+  for(const m of memories)drawMemory(m,S);
+  for(const h of hazards)drawHazard(h);
+  drawPlayer();drawParticles();
+
+  const vignette=ctx.createRadialGradient(W/2,H*.5,Math.min(W,H)*.18,W/2,H*.5,Math.max(W,H)*.77);
+  vignette.addColorStop(0,"rgba(0,0,0,0)");vignette.addColorStop(1,"rgba(0,0,0,.38)");
+  ctx.fillStyle=vignette;ctx.fillRect(0,0,W,H);
+
+  if(shake>0){
+    // tiny overlay flash for a more tactile feel
+    ctx.fillStyle=`rgba(255,110,165,${shake*.003})`;ctx.fillRect(0,0,W,H);
+    shake=Math.max(0,shake-.03);
+  }
+}
+
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(.033,(now-last)/1000);last=now;
+  update(dt);
+  ctx.save();
+  if(shake>0.2)ctx.translate(rand(-shake,shake),rand(-shake,shake));
+  draw();
+  ctx.restore();
+  requestAnimationFrame(loop);
+}
+
+$("playBtn").addEventListener("click",startGame);
+$("againBtn").addEventListener("click",startGame);
+$("musicBtn").addEventListener("click",()=>{
+  soundOn=!soundOn;
+  $("musicBtn").textContent=`♫ ÂM THANH: ${soundOn?"BẬT":"TẮT"}`;
+  if(soundOn){setupAudio();beep(660,.08,"sine",.04,160)}
+});
+
+sync();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
